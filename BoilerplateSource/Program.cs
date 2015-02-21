@@ -17,11 +17,24 @@ namespace BoilerplateSource {
 			stack = new Byte[stackSize];
 			stackIndex = stackStartIndex;
 
+			IncrementStackIndex();
+			IncrementStackByte();
 
+			while (stack[stackIndex] != 0) {
+				IncrementStackIndex();
+				IncrementStackByte();
+			}
 
-
-
-
+		//	if (stack[stackIndex] == 0)
+		//		goto @break;
+		//loop:
+		//	IncrementStackIndex();
+		//	IncrementStackByte();
+		//	if (stack[stackIndex] != 0)
+		//		goto loop;
+		//@break:
+		//	IncrementStackIndex();
+		//	IncrementStackByte();
 		}
 		static void IncrementStackByte() {
 			++stack[stackIndex];

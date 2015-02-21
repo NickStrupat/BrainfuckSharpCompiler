@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -54,6 +55,7 @@ namespace BrainfuckSharpCompiler {
 			ilg.Emit(OpCodes.Ldc_I4_0);
 			ilg.Emit(OpCodes.Stsfld, stackIndexFieldInfo);
 
+			var labels = new Stack<Label>();
 			Int32 byteRead;
 			while ((byteRead = instructionStream.ReadByte()) != -1) {
 				var instruction = (Char) byteRead;
@@ -76,20 +78,25 @@ namespace BrainfuckSharpCompiler {
 					case ',':
 						ilg.Emit(OpCodes.Call, readStackByteMethodBuilder);
 						break;
-					case '[':
-						//if (stack[stackIndex] == 0) {
-						//	while (instructionStream.ReadByte() != ']')
-						//		;
-						//}
-						//else
-						//	jumps.Push(instructionStream.Position);
+					case '[': {
+						var top = ilg.DefineLabel();
+						var bottom = ilg.DefineLabel();
+						ilg.Emit(OpCodes.Br, bottom);
+						ilg.MarkLabel(top);
+						labels.Push(bottom);
+						labels.Push(top);
 						break;
-					case ']':
-						//if (stack[stackIndex] != 0)
-						//	instructionStream.Seek(jumps.Peek(), SeekOrigin.Begin);
-						//else
-						//	jumps.Pop();
+					}
+					case ']': {
+						var top = labels.Pop();
+						var bottom = labels.Pop();
+						ilg.MarkLabel(bottom);
+						ilg.Emit(OpCodes.Ldsfld, stackFieldInfo);
+						ilg.Emit(OpCodes.Ldsfld, stackIndexFieldInfo);
+						ilg.Emit(OpCodes.Ldelem_U1);
+						ilg.Emit(OpCodes.Brtrue, top);
 						break;
+					}
 				}
 			}
 
