@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrainfuckSharpCompiler", "BrainfuckSharpCompiler\BrainfuckSharpCompiler.csproj", "{A0D3FB1D-CEFC-419B-9E1A-735B2C5059B2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoilerplateSource", "BoilerplateSource\BoilerplateSource.csproj", "{62F45F56-306C-47E6-9E4E-6579E4306113}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{A0D3FB1D-CEFC-419B-9E1A-735B2C5059B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0D3FB1D-CEFC-419B-9E1A-735B2C5059B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0D3FB1D-CEFC-419B-9E1A-735B2C5059B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62F45F56-306C-47E6-9E4E-6579E4306113}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62F45F56-306C-47E6-9E4E-6579E4306113}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62F45F56-306C-47E6-9E4E-6579E4306113}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62F45F56-306C-47E6-9E4E-6579E4306113}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
