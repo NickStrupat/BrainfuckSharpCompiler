@@ -8,25 +8,40 @@ namespace BoilerplateSource {
 	class Program {
 		//static Stack<Int64> jumps = new Stack<Int64>(); // instruction indexes
 
+		const Int32 stackSize = 30000;
+		const Int32 stackStartIndex = 0;
+		const Int32 stackEndIndex = stackSize - 1;
+		static Byte[] stack;
+		static Int32 stackIndex;
 		static void Main(string[] args) {
-			const Int32 stackSize = 30000;
-			const Int32 stackStartIndex = 0;
-			const Int32 stackEndIndex = stackSize - 1;
-			var stack = new Byte[stackSize];
-			var stackIndex = stackStartIndex;
+			stack = new Byte[stackSize];
+			stackIndex = stackStartIndex;
 
-			++stackIndex;
 
-			--stackIndex;
 
+
+
+
+		}
+		static void IncrementStackByte() {
 			++stack[stackIndex];
-
+		}
+		static void DecrementStackByte() {
 			--stack[stackIndex];
-
+		}
+		static void IncrementStackIndex() {
+			++stackIndex;
+		}
+		static void DecrementStackIndex() {
+			--stackIndex;
+		}
+		static void WriteStackByte() {
 			Console.Write((Char)stack[stackIndex]);
-
+		}
+		static void ReadStackByte() {
 			stack[stackIndex] = (Byte)Console.Read();
 		}
+
 		//static void GreaterThan() {
 		//	++stackIndex;
 		//	//if (stackIndex == stackEndIndex)
