@@ -23,6 +23,8 @@ namespace BrainfuckSharpCompiler {
 			ilg.EmitWriteLine("Hello, World!");
 			//ilg.Emit(OpCodes.Ldstr, "Hello, World!");
 			//ilg.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new [] { typeof(String) }));
+			//ilg.Emit(OpCodes.b);
+			//ilg.MarkLabel();
 			ilg.Emit(OpCodes.Ret);
 			
 			// Seal the lid on this type

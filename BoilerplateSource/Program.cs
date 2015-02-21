@@ -38,19 +38,19 @@ namespace BoilerplateSource {
 		static void Comma() {
 			stack[stackIndex] = (Byte)Console.Read();
 		}
-		static void LeftBracket() {
-			if (stack[stackIndex] == 0) {
-				while (instructionStream.ReadByte() != ']')
-					;
-			}
-			else
-				jumps.Push(instructionStream.Position);
-		}
-		static void RightBracket() {
-			if (stack[stackIndex] != 0)
-				instructionStream.Seek(jumps.Peek(), SeekOrigin.Begin);
-			else
-				jumps.Pop();
-		}
+		//static void LeftBracket() {
+		//	if (stack[stackIndex] == 0) {
+		//		while (instructionStream.ReadByte() != ']')
+		//			;
+		//	}
+		//	else
+		//		jumps.Push(instructionStream.Position);
+		//}
+		//static void RightBracket() {
+		//	if (stack[stackIndex] != 0)
+		//		instructionStream.Seek(jumps.Peek(), SeekOrigin.Begin);
+		//	else
+		//		jumps.Pop();
+		//}
 	}
 }
