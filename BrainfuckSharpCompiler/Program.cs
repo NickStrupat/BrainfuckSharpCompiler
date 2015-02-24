@@ -13,13 +13,27 @@ namespace BrainfuckSharpCompiler {
 		static void Main(String[] args) {
 			if (args.Length < 1)
 				throw new ArgumentException(String.Format("Usage: {0} source_file_path", AppDomain.CurrentDomain.FriendlyName));
+			String inputFileName = null;
+			Int32 stackSize = 30000;
+			foreach (var arg in args) {
+				if (arg[0] == '/')
+					switch (arg.Substring(1, 2)) {
+						case "s:":
+							stackSize = Int32.Parse(arg.Substring(3));
+							break;
+						default:
+							throw new ArgumentException();
+					}
+				else
+					inputFileName = arg;
+			}
 
-			var instructionStream = new FileStream(args[0], FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
+			var instructionStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
 
-			var an = new AssemblyName { Name = args[0] };
+			var an = new AssemblyName { Name = inputFileName };
 			var ad = AppDomain.CurrentDomain;
 			var ab = ad.DefineDynamicAssembly(an, AssemblyBuilderAccess.Save);
-			var mb = ab.DefineDynamicModule(an.Name, args[0] + ".exe");
+			var mb = ab.DefineDynamicModule(an.Name, inputFileName + ".exe");
 			var tb = mb.DefineType("Brainfuck.Program", TypeAttributes.Public | TypeAttributes.Class);
 
 			stackFieldInfo = tb.DefineField("stack", arrayType, FieldAttributes.Static);
@@ -47,7 +61,7 @@ namespace BrainfuckSharpCompiler {
 			var ilg = fb.GetILGenerator();
 
 			// initialize stack
-			ilg.Emit(OpCodes.Ldc_I4, 30000);
+			ilg.Emit(OpCodes.Ldc_I4, stackSize);
 			ilg.Emit(OpCodes.Newarr, arrayElementType);
 			ilg.Emit(OpCodes.Stsfld, stackFieldInfo);
 
@@ -107,7 +121,7 @@ namespace BrainfuckSharpCompiler {
 			// Set the entrypoint (thereby declaring it an EXE)
 			ab.SetEntryPoint(fb, PEFileKinds.ConsoleApplication);
 			// Save it
-			ab.Save(args[0] + ".exe");
+			ab.Save(inputFileName + ".exe");
 		}
 
 		static void EmitIncrementStackIndexMethodInstructions(ILGenerator ilg) {
