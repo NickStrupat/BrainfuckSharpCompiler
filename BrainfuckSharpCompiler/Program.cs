@@ -30,34 +30,34 @@ namespace BrainfuckSharpCompiler {
 
 			var instructionStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
 
-			var an = new AssemblyName { Name = inputFileName };
-			var ad = AppDomain.CurrentDomain;
-			var ab = ad.DefineDynamicAssembly(an, AssemblyBuilderAccess.Save);
-			var mb = ab.DefineDynamicModule(an.Name, inputFileName + ".exe");
-			var tb = mb.DefineType("Brainfuck.Program", TypeAttributes.Public | TypeAttributes.Class);
+			var assemblyName = new AssemblyName { Name = inputFileName };
+			var appDomain = AppDomain.CurrentDomain;
+			var assemblyBuilder = appDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Save);
+			var moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name, inputFileName + ".exe");
+			var typeBuilder = moduleBuilder.DefineType("Brainfuck.Program", TypeAttributes.Public | TypeAttributes.Class);
 
-			stackFieldInfo = tb.DefineField("stack", arrayType, FieldAttributes.Static);
-			stackIndexFieldInfo = tb.DefineField("stackIndex", typeof(Int32), FieldAttributes.Static);
+			stackFieldInfo = typeBuilder.DefineField("stack", arrayType, FieldAttributes.Static);
+			stackIndexFieldInfo = typeBuilder.DefineField("stackIndex", typeof(Int32), FieldAttributes.Static);
 
-			var incrementStackIndexMethodBuilder = tb.DefineMethod("IncrementStackIndex", MethodAttributes.Static, CallingConventions.Standard, typeof (void), null);
+			var incrementStackIndexMethodBuilder = typeBuilder.DefineMethod("IncrementStackIndex", MethodAttributes.Static, CallingConventions.Standard, typeof (void), null);
 			EmitIncrementStackIndexMethodInstructions(incrementStackIndexMethodBuilder.GetILGenerator());
 
-			var decrementStackIndexMethodBuilder = tb.DefineMethod("DecrementStackIndex", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
+			var decrementStackIndexMethodBuilder = typeBuilder.DefineMethod("DecrementStackIndex", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
 			EmitDecrementStackIndexMethodInstructions(decrementStackIndexMethodBuilder.GetILGenerator());
 
-			var incrementStackByteMethodBuilder = tb.DefineMethod("IncrementStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
+			var incrementStackByteMethodBuilder = typeBuilder.DefineMethod("IncrementStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
 			EmitIncrementStackByteMethodInstructions(incrementStackByteMethodBuilder.GetILGenerator());
 
-			var decrementStackByteMethodBuilder = tb.DefineMethod("DecrementStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
+			var decrementStackByteMethodBuilder = typeBuilder.DefineMethod("DecrementStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
 			EmitDecrementStackByteMethodInstructions(decrementStackByteMethodBuilder.GetILGenerator());
 
-			var writeStackByteMethodBuilder = tb.DefineMethod("WriteStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
+			var writeStackByteMethodBuilder = typeBuilder.DefineMethod("WriteStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
 			EmitWriteStackByteMethodInstructions(writeStackByteMethodBuilder.GetILGenerator());
 
-			var readStackByteMethodBuilder = tb.DefineMethod("ReadStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
+			var readStackByteMethodBuilder = typeBuilder.DefineMethod("ReadStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
 			EmitReadStackByteMethodInstructions(readStackByteMethodBuilder.GetILGenerator());
 
-			var fb = tb.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new [] { typeof(String[]) });
+			var fb = typeBuilder.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new [] { typeof(String[]) });
 			var ilg = fb.GetILGenerator();
 
 			// initialize stack
@@ -117,11 +117,11 @@ namespace BrainfuckSharpCompiler {
 			ilg.Emit(OpCodes.Ret);
 			
 			// Seal the lid on this type
-			var t = tb.CreateType();
+			var t = typeBuilder.CreateType();
 			// Set the entrypoint (thereby declaring it an EXE)
-			ab.SetEntryPoint(fb, PEFileKinds.ConsoleApplication);
+			assemblyBuilder.SetEntryPoint(fb, PEFileKinds.ConsoleApplication);
 			// Save it
-			ab.Save(inputFileName + ".exe");
+			assemblyBuilder.Save(inputFileName + ".exe");
 		}
 
 		static void EmitIncrementStackIndexMethodInstructions(ILGenerator ilg) {
