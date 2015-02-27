@@ -10,19 +10,33 @@ namespace BrainfuckSharpCompiler {
 		static readonly Type arrayType = typeof(Byte[]);
 		static FieldInfo stackFieldInfo;
 		static FieldInfo stackIndexFieldInfo;
+
+		static void ThrowArgumentException() {
+			throw new ArgumentException(String.Format("Usage: {0} source_file_path [/s:30000] [/u]", AppDomain.CurrentDomain.FriendlyName));
+		}
+
 		static void Main(String[] args) {
 			if (args.Length < 1)
-				throw new ArgumentException(String.Format("Usage: {0} source_file_path", AppDomain.CurrentDomain.FriendlyName));
+				ThrowArgumentException();
 			String inputFileName = null;
-			Int32 stackSize = 30000;
+			UInt32 stackSize = 30000;
+			Boolean @unsafe = false;
+			Boolean inline = false;
 			foreach (var arg in args) {
 				if (arg[0] == '/')
-					switch (arg.Substring(1, 2)) {
-						case "s:":
-							stackSize = Int32.Parse(arg.Substring(3));
+					switch (arg[1]) {
+						case 's':
+							stackSize = UInt32.Parse(arg.Substring(3));
+							break;
+						case 'u':
+							@unsafe = true;
+							break;
+						case 'i':
+							inline = true;
 							break;
 						default:
-							throw new ArgumentException();
+							ThrowArgumentException();
+							break;
 					}
 				else
 					inputFileName = arg;
