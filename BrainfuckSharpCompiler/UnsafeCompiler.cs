@@ -4,26 +4,24 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 namespace BrainfuckSharpCompiler {
-	class SafeCompiler : CompilerBase {
-		static readonly Type arrayElementType = typeof(Byte);
-		static readonly Type arrayType = typeof(Byte[]);
-
-		static FieldInfo stackFieldInfo;
-		static FieldInfo stackIndexFieldInfo;
+	class UnsafeCompiler : CompilerBase {
 		readonly Stack<Label> loopLabels = new Stack<Label>();
+		readonly FieldBuilder stackPointer;
 
-		public SafeCompiler(String inputFileName, UInt32 stackSize, Boolean inline) : base(inputFileName, stackSize, inline) {
-			stackFieldInfo = ProgramTypeBuilder.DefineField("stack", arrayType, FieldAttributes.Static);
-			stackIndexFieldInfo = ProgramTypeBuilder.DefineField("stackIndex", typeof(Int32), FieldAttributes.Static);
-
+		public UnsafeCompiler(string inputFileName, uint stackSize, bool inline) : base(inputFileName, stackSize, inline) {
+			if (!inline)
+				stackPointer = ProgramTypeBuilder.DefineField("stackPointer", typeof (Byte *), FieldAttributes.Static);
+			var stack = MainIlGenerator.DeclareLocal(typeof(Byte *));
 			// initialize stack
 			MainIlGenerator.Emit(OpCodes.Ldc_I4, stackSize);
-			MainIlGenerator.Emit(OpCodes.Newarr, arrayElementType);
-			MainIlGenerator.Emit(OpCodes.Stsfld, stackFieldInfo);
-
-			// initialize stack index
-			MainIlGenerator.Emit(OpCodes.Ldc_I4_0);
-			MainIlGenerator.Emit(OpCodes.Stsfld, stackIndexFieldInfo);
+			MainIlGenerator.Emit(OpCodes.Conv_U);
+			MainIlGenerator.Emit(OpCodes.Localloc);
+			MainIlGenerator.Emit(OpCodes.Stloc_0);
+			if (!inline) {
+				// assign stack pointer to the address of the first element in the stack
+				MainIlGenerator.Emit(OpCodes.Ldloc_0);
+				MainIlGenerator.Emit(OpCodes.Stsfld, stackPointer);
+			}
 		}
 
 		protected override void EmitIncrementStackIndexMethodInstructions(ILGenerator ilGenerator) {
@@ -35,11 +33,19 @@ namespace BrainfuckSharpCompiler {
 		}
 
 		void EmitStackIndexMethodInstructions(ILGenerator ilGenerator, OpCode addOrSub) {
-			ilGenerator.Emit(OpCodes.Ldsfld, stackIndexFieldInfo);
+			if (Inline)
+				ilGenerator.Emit(OpCodes.Ldloc_0);
+			else
+				ilGenerator.Emit(OpCodes.Ldsfld, stackPointer);
+
 			ilGenerator.Emit(OpCodes.Ldc_I4_1);
+			ilGenerator.Emit(OpCodes.Conv_I);
 			ilGenerator.Emit(addOrSub);
-			ilGenerator.Emit(OpCodes.Stsfld, stackIndexFieldInfo);
-			ilGenerator.Emit(OpCodes.Ret);
+			
+			if (Inline)
+				ilGenerator.Emit(OpCodes.Stloc_0);
+			else
+				ilGenerator.Emit(OpCodes.Stsfld, stackPointer);
 		}
 
 		protected override void EmitIncrementStackByteMethodInstructions(ILGenerator ilGenerator) {
@@ -51,35 +57,40 @@ namespace BrainfuckSharpCompiler {
 		}
 
 		void EmitStackByteMethodInstructions(ILGenerator ilGenerator, OpCode addOrSub) {
-			ilGenerator.Emit(OpCodes.Ldsfld, stackFieldInfo);
-			ilGenerator.Emit(OpCodes.Ldsfld, stackIndexFieldInfo);
-			ilGenerator.Emit(OpCodes.Ldelema, arrayElementType);
+			if (Inline)
+				ilGenerator.Emit(OpCodes.Ldloc_0);
+			else
+				ilGenerator.Emit(OpCodes.Ldsfld, stackPointer);
+
 			ilGenerator.Emit(OpCodes.Dup);
-			ilGenerator.Emit(OpCodes.Ldobj, arrayElementType);
+			ilGenerator.Emit(OpCodes.Ldind_U1);
 			ilGenerator.Emit(OpCodes.Ldc_I4_1);
 			ilGenerator.Emit(addOrSub);
 			ilGenerator.Emit(OpCodes.Conv_U1);
-			ilGenerator.Emit(OpCodes.Stobj, arrayElementType);
-			ilGenerator.Emit(OpCodes.Ret);
+			ilGenerator.Emit(OpCodes.Stind_I1);
 		}
 
 		static readonly MethodInfo consoleWriteChar = new Action<Char>(Console.Write).Method;
 		protected override void EmitWriteStackByteMethodInstructions(ILGenerator ilGenerator) {
-			ilGenerator.Emit(OpCodes.Ldsfld, stackFieldInfo);
-			ilGenerator.Emit(OpCodes.Ldsfld, stackIndexFieldInfo);
-			ilGenerator.Emit(OpCodes.Ldelem_U1);
+			if (Inline)
+				ilGenerator.Emit(OpCodes.Ldloc_0);
+			else
+				ilGenerator.Emit(OpCodes.Ldsfld, stackPointer);
+
+			ilGenerator.Emit(OpCodes.Ldind_U1);
 			ilGenerator.Emit(OpCodes.Call, consoleWriteChar);
-			ilGenerator.Emit(OpCodes.Ret);
 		}
 
 		static readonly MethodInfo consoleRead = new Func<Int32>(Console.Read).Method;
 		protected override void EmitReadStackByteMethodInstructions(ILGenerator ilGenerator) {
-			ilGenerator.Emit(OpCodes.Ldsfld, stackFieldInfo);
-			ilGenerator.Emit(OpCodes.Ldsfld, stackIndexFieldInfo);
+			if (Inline)
+				ilGenerator.Emit(OpCodes.Ldloc_0);
+			else
+				ilGenerator.Emit(OpCodes.Ldsfld, stackPointer);
+
 			ilGenerator.Emit(OpCodes.Call, consoleRead);
 			ilGenerator.Emit(OpCodes.Conv_U1);
-			ilGenerator.Emit(OpCodes.Stelem_I1);
-			ilGenerator.Emit(OpCodes.Ret);
+			ilGenerator.Emit(OpCodes.Stind_I1);
 		}
 
 		protected override void EmitBeginLoopMethodInstructions(ILGenerator ilGenerator) {
@@ -95,9 +106,11 @@ namespace BrainfuckSharpCompiler {
 			var top = loopLabels.Pop();
 			var bottom = loopLabels.Pop();
 			ilGenerator.MarkLabel(bottom);
-			ilGenerator.Emit(OpCodes.Ldsfld, stackFieldInfo);
-			ilGenerator.Emit(OpCodes.Ldsfld, stackIndexFieldInfo);
-			ilGenerator.Emit(OpCodes.Ldelem_U1);
+			if (Inline)
+				ilGenerator.Emit(OpCodes.Ldloc_0);
+			else
+				ilGenerator.Emit(OpCodes.Ldsfld, stackPointer);
+			ilGenerator.Emit(OpCodes.Ldind_U1);
 			ilGenerator.Emit(OpCodes.Brtrue, top);
 		}
 	}

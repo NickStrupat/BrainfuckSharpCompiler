@@ -42,6 +42,14 @@ namespace BrainfuckSharpCompiler {
 					inputFileName = arg;
 			}
 
+			CompilerBase compiler;
+			if (@unsafe)
+				compiler = new UnsafeCompiler(inputFileName, stackSize, inline);
+			else
+				compiler = new SafeCompiler(inputFileName, stackSize, inline);
+			compiler.Compile();
+			return;
+
 			var instructionStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
 
 			var assemblyName = new AssemblyName { Name = inputFileName };
