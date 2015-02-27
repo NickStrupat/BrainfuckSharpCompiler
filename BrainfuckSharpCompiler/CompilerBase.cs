@@ -10,26 +10,21 @@ namespace BrainfuckSharpCompiler {
 		private readonly MethodBuilder mainMethodBuilder;
 		protected readonly ILGenerator MainIlGenerator;
 
+		private readonly String inputFilePath;
 		private readonly String inputFileName;
 		private readonly UInt32 stackSize;
 		protected readonly Boolean Inline;
 
-		Action EmitInvokeIncrementStackIndexMethodInstructions;
-		Action EmitInvokeDecrementStackIndexMethodInstructions;
-		Action EmitInvokeIncrementStackByteMethodInstructions;
-		Action EmitInvokeDecrementStackByteMethodInstructions;
-		Action EmitInvokeWriteStackByteMethodInstructions;
-		Action EmitInvokeReadStackByteMethodInstructions;
+		Action emitInvokeIncrementStackIndexMethodInstructions;
+		Action emitInvokeDecrementStackIndexMethodInstructions;
+		Action emitInvokeIncrementStackByteMethodInstructions;
+		Action emitInvokeDecrementStackByteMethodInstructions;
+		Action emitInvokeWriteStackByteMethodInstructions;
+		Action emitInvokeReadStackByteMethodInstructions;
 
-		private MethodBuilder incrementStackIndexMethodBuilder;
-		private MethodBuilder decrementStackIndexMethodBuilder;
-		private MethodBuilder incrementStackByteMethodBuilder;
-		private MethodBuilder decrementStackByteMethodBuilder;
-		private MethodBuilder writeStackByteMethodBuilder;
-		private MethodBuilder readStackByteMethodBuilder;
-
-		protected CompilerBase(String inputFileName, UInt32 stackSize, Boolean inline) {
-			this.inputFileName = inputFileName;
+		protected CompilerBase(String inputFilePath, UInt32 stackSize, Boolean inline) {
+			this.inputFilePath = inputFilePath;
+			this.inputFileName = Path.GetFileName(inputFilePath);
 			this.stackSize = stackSize;
 			this.Inline = inline;
 
@@ -43,12 +38,12 @@ namespace BrainfuckSharpCompiler {
 			MainIlGenerator = mainMethodBuilder.GetILGenerator();
 		}
 
-		struct MethodEmitPair {
+		struct OperationEmitConfiguration {
 			public readonly String Name;
 			public readonly Action<ILGenerator> MethodEmitter;
-			public readonly Action EmitInvokeMethodInstructions;
+			public readonly Action<Action> EmitInvokeMethodInstructions;
 
-			public MethodEmitPair(String name, Action<ILGenerator> methodEmitter, Action<Action> emitInvokeMethodInstructions) {
+			public OperationEmitConfiguration(String name, Action<ILGenerator> methodEmitter, Action<Action> emitInvokeMethodInstructions) {
 				Name = name;
 				MethodEmitter = methodEmitter;
 				EmitInvokeMethodInstructions = emitInvokeMethodInstructions;
@@ -56,85 +51,48 @@ namespace BrainfuckSharpCompiler {
 		}
 
 		public void Compile() {
-			if (Inline) {
-				
-			}
-			else {
-				var methodEmitPairs = new[] {
-					                            new MethodEmitPair("IncrementStackIndex", EmitIncrementStackIndexMethodInstructions, a => EmitInvokeIncrementStackIndexMethodInstructions = a),
-					                            new MethodEmitPair("DecrementStackIndex", EmitIncrementStackIndexMethodInstructions, a => EmitInvokeDecrementStackIndexMethodInstructions = a),
-					                            new MethodEmitPair("IncrementStackByte",  EmitIncrementStackIndexMethodInstructions, a => EmitInvokeIncrementStackByteMethodInstructions = a),
-					                            new MethodEmitPair("DecrementStackByte",  EmitIncrementStackIndexMethodInstructions, a => EmitInvokeDecrementStackByteMethodInstructions = a),
-					                            new MethodEmitPair("WriteStackByte",      EmitIncrementStackIndexMethodInstructions, a => EmitInvokeWriteStackByteMethodInstructions = a),
-					                            new MethodEmitPair("ReadStackByte",       EmitIncrementStackIndexMethodInstructions, a => EmitInvokeReadStackByteMethodInstructions = a),
-				                            };
-				foreach (var methodEmitPair in methodEmitPairs) {
-					var methodBuilder = ProgramTypeBuilder.DefineMethod(methodEmitPair.Name, MethodAttributes.Static, CallingConventions.Standard, typeof (void), null);
+			var operationEmitConfigurations = new[] {
+				new OperationEmitConfiguration("IncrementStackIndex", EmitIncrementStackIndexMethodInstructions, a => emitInvokeIncrementStackIndexMethodInstructions = a),
+				new OperationEmitConfiguration("DecrementStackIndex", EmitDecrementStackIndexMethodInstructions, a => emitInvokeDecrementStackIndexMethodInstructions = a),
+				new OperationEmitConfiguration("IncrementStackByte", EmitIncrementStackByteMethodInstructions, a => emitInvokeIncrementStackByteMethodInstructions = a),
+				new OperationEmitConfiguration("DecrementStackByte", EmitDecrementStackByteMethodInstructions, a => emitInvokeDecrementStackByteMethodInstructions = a),
+				new OperationEmitConfiguration("WriteStackByte", EmitWriteStackByteMethodInstructions, a => emitInvokeWriteStackByteMethodInstructions = a),
+				new OperationEmitConfiguration("ReadStackByte", EmitReadStackByteMethodInstructions, a => emitInvokeReadStackByteMethodInstructions = a),
+			};
+			foreach (var operationEmitConfiguration in operationEmitConfigurations) {
+				if (Inline)
+					operationEmitConfiguration.EmitInvokeMethodInstructions(() => operationEmitConfiguration.MethodEmitter(MainIlGenerator));
+				else {
+					var methodBuilder = ProgramTypeBuilder.DefineMethod(operationEmitConfiguration.Name, MethodAttributes.Static, CallingConventions.Standard, typeof (void), null);
 					var ilGenerator = methodBuilder.GetILGenerator();
-					methodEmitPair.MethodEmitter(ilGenerator);
+					operationEmitConfiguration.MethodEmitter(ilGenerator);
 					ilGenerator.Emit(OpCodes.Ret);
-					methodEmitPair.EmitInvokeMethodInstructions(() => MainIlGenerator.Emit(OpCodes.Call, methodBuilder));
+					operationEmitConfiguration.EmitInvokeMethodInstructions(() => MainIlGenerator.Emit(OpCodes.Call, methodBuilder));
 				}
-
-				incrementStackIndexMethodBuilder = ProgramTypeBuilder.DefineMethod("IncrementStackIndex", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
-				EmitIncrementStackIndexMethodInstructions(incrementStackIndexMethodBuilder.GetILGenerator());
-
-				decrementStackIndexMethodBuilder = ProgramTypeBuilder.DefineMethod("DecrementStackIndex", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
-				EmitDecrementStackIndexMethodInstructions(decrementStackIndexMethodBuilder.GetILGenerator());
-
-				incrementStackByteMethodBuilder = ProgramTypeBuilder.DefineMethod("IncrementStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
-				EmitIncrementStackByteMethodInstructions(incrementStackByteMethodBuilder.GetILGenerator());
-
-				decrementStackByteMethodBuilder = ProgramTypeBuilder.DefineMethod("DecrementStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
-				EmitDecrementStackByteMethodInstructions(decrementStackByteMethodBuilder.GetILGenerator());
-
-				writeStackByteMethodBuilder = ProgramTypeBuilder.DefineMethod("WriteStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
-				EmitWriteStackByteMethodInstructions(writeStackByteMethodBuilder.GetILGenerator());
-
-				readStackByteMethodBuilder = ProgramTypeBuilder.DefineMethod("ReadStackByte", MethodAttributes.Static, CallingConventions.Standard, typeof(void), null);
-				EmitReadStackByteMethodInstructions(readStackByteMethodBuilder.GetILGenerator());
 			}
 
-			var instructionStream = new FileStream(inputFileName, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
+			var instructionStream = new FileStream(inputFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
 			Int32 byteRead;
 			while ((byteRead = instructionStream.ReadByte()) != -1) {
 				var instruction = (Char)byteRead;
 				switch (instruction) {
 					case '>':
-						if (Inline)
-							EmitIncrementStackIndexMethodInstructions(MainIlGenerator);
-						else
-							MainIlGenerator.Emit(OpCodes.Call, incrementStackIndexMethodBuilder);
+						emitInvokeIncrementStackIndexMethodInstructions();
 						break;
 					case '<':
-						if (Inline)
-							EmitDecrementStackIndexMethodInstructions(MainIlGenerator);
-						else
-							MainIlGenerator.Emit(OpCodes.Call, decrementStackIndexMethodBuilder);
+						emitInvokeDecrementStackIndexMethodInstructions();
 						break;
 					case '+':
-						if (Inline)
-							EmitIncrementStackByteMethodInstructions(MainIlGenerator);
-						else
-							MainIlGenerator.Emit(OpCodes.Call, incrementStackByteMethodBuilder);
+						emitInvokeIncrementStackByteMethodInstructions();
 						break;
 					case '-':
-						if (Inline)
-							EmitDecrementStackByteMethodInstructions(MainIlGenerator);
-						else
-							MainIlGenerator.Emit(OpCodes.Call, decrementStackByteMethodBuilder);
+						emitInvokeDecrementStackByteMethodInstructions();
 						break;
 					case '.':
-						if (Inline)
-							EmitWriteStackByteMethodInstructions(MainIlGenerator);
-						else
-							MainIlGenerator.Emit(OpCodes.Call, writeStackByteMethodBuilder);
+						emitInvokeWriteStackByteMethodInstructions();
 						break;
 					case ',':
-						if (Inline)
-							EmitReadStackByteMethodInstructions(MainIlGenerator);
-						else
-							MainIlGenerator.Emit(OpCodes.Call, readStackByteMethodBuilder);
+						emitInvokeReadStackByteMethodInstructions();
 						break;
 					case '[':
 						EmitBeginLoopMethodInstructions(MainIlGenerator);

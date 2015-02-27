@@ -12,7 +12,7 @@ namespace BrainfuckSharpCompiler {
 		static FieldInfo stackIndexFieldInfo;
 		readonly Stack<Label> loopLabels = new Stack<Label>();
 
-		public SafeCompiler(String inputFileName, UInt32 stackSize, Boolean inline) : base(inputFileName, stackSize, inline) {
+		public SafeCompiler(String inputFilePath, UInt32 stackSize, Boolean inline) : base(inputFilePath, stackSize, inline) {
 			stackFieldInfo = ProgramTypeBuilder.DefineField("stack", arrayType, FieldAttributes.Static);
 			stackIndexFieldInfo = ProgramTypeBuilder.DefineField("stackIndex", typeof(Int32), FieldAttributes.Static);
 
@@ -39,7 +39,6 @@ namespace BrainfuckSharpCompiler {
 			ilGenerator.Emit(OpCodes.Ldc_I4_1);
 			ilGenerator.Emit(addOrSub);
 			ilGenerator.Emit(OpCodes.Stsfld, stackIndexFieldInfo);
-			ilGenerator.Emit(OpCodes.Ret);
 		}
 
 		protected override void EmitIncrementStackByteMethodInstructions(ILGenerator ilGenerator) {
@@ -60,7 +59,6 @@ namespace BrainfuckSharpCompiler {
 			ilGenerator.Emit(addOrSub);
 			ilGenerator.Emit(OpCodes.Conv_U1);
 			ilGenerator.Emit(OpCodes.Stobj, arrayElementType);
-			ilGenerator.Emit(OpCodes.Ret);
 		}
 
 		static readonly MethodInfo consoleWriteChar = new Action<Char>(Console.Write).Method;
@@ -69,7 +67,6 @@ namespace BrainfuckSharpCompiler {
 			ilGenerator.Emit(OpCodes.Ldsfld, stackIndexFieldInfo);
 			ilGenerator.Emit(OpCodes.Ldelem_U1);
 			ilGenerator.Emit(OpCodes.Call, consoleWriteChar);
-			ilGenerator.Emit(OpCodes.Ret);
 		}
 
 		static readonly MethodInfo consoleRead = new Func<Int32>(Console.Read).Method;
@@ -79,7 +76,6 @@ namespace BrainfuckSharpCompiler {
 			ilGenerator.Emit(OpCodes.Call, consoleRead);
 			ilGenerator.Emit(OpCodes.Conv_U1);
 			ilGenerator.Emit(OpCodes.Stelem_I1);
-			ilGenerator.Emit(OpCodes.Ret);
 		}
 
 		protected override void EmitBeginLoopMethodInstructions(ILGenerator ilGenerator) {

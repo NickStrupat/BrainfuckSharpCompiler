@@ -8,7 +8,7 @@ namespace BrainfuckSharpCompiler {
 		readonly Stack<Label> loopLabels = new Stack<Label>();
 		readonly FieldBuilder stackPointer;
 
-		public UnsafeCompiler(string inputFileName, uint stackSize, bool inline) : base(inputFileName, stackSize, inline) {
+		public UnsafeCompiler(string inputFilePath, uint stackSize, bool inline) : base(inputFilePath, stackSize, inline) {
 			if (!inline)
 				stackPointer = ProgramTypeBuilder.DefineField("stackPointer", typeof (Byte *), FieldAttributes.Static);
 			var stack = MainIlGenerator.DeclareLocal(typeof(Byte *));
