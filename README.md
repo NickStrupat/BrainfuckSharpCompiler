@@ -7,7 +7,7 @@ Here's the fun stuff...
 
 When compiling the brainfuck program, we read the file character by character. The only valid ones, of course, are the eight valid operations...
 
-    <>+_,.[]
+    <>+-,.[]
 
 ... for each of these we just need to emit the correct IL instructions which correspond to the correct behaviour at run-time in the CLR environment.
 
