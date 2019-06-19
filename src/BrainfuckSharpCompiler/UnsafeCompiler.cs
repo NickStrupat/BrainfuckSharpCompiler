@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 namespace BrainfuckSharpCompiler {
-	class UnsafeCompiler : CompilerBase {
+	class UnsafeCompiler : Compiler {
 		readonly Stack<Label> loopLabels = new Stack<Label>();
 		readonly FieldBuilder stackPointer;
 

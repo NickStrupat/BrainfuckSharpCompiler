@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 namespace BrainfuckSharpCompiler {
-	class SafeCompiler : CompilerBase {
+	class SafeCompiler : Compiler {
 		static readonly Type arrayElementType = typeof(Byte);
 		static readonly Type arrayType = typeof(Byte[]);
 
